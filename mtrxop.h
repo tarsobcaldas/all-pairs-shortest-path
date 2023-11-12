@@ -1,7 +1,7 @@
 #ifndef MTRXOP_H
 #define MTRXOP_H
 
-#include <mpi.h>
+#include <openmpi-x86_64/mpi.h>
 
 typedef struct {
   int nprocs;             // total number of processes
