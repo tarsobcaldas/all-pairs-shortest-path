@@ -68,6 +68,19 @@ void matrixMultiply(int** matrixA, int** matrixB, int** matrixC, int size) {
   }
 }
 
+void generateRandomArray(int array[], int length){
+  srand(time(NULL));
+  int i, j, k;
+  for (i = 0; i < length; i++) {
+    for (j = 0; j < length; j++) {
+      k = (i * length + j);
+      if (i == j)
+        array[k] = 0;
+      else
+        array[k] = rand() % 101;
+    }
+  }
+}
 
 void setupGrid(GRID_TYPE* grid) {
   int rank, dimensions[2], periods[2], coordinates[2], varying_coords[2];

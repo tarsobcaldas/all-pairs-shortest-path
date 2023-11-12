@@ -1,7 +1,7 @@
 #ifndef MTRXOP_H
 #define MTRXOP_H
 
-#include <openmpi-x86_64/mpi.h>
+#include <mpi.h>
 
 typedef struct {
   int nprocs;             // total number of processes
@@ -31,6 +31,6 @@ void printMatrix(int** matrix, int length);
 
 void copyMatrix(int** matrixA, int** matrixB, int length);
 
-void randomizeMatrix(int** matrix, int length);
+void generateRandomArray(int array[], int length);
 
 #endif

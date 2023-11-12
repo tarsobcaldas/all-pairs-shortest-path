@@ -1,4 +1,4 @@
-#include <openmpi-x86_64/mpi.h>
+#include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,8 +12,8 @@
 int mtrxSize, submtrxOrder, submtrxSize;
 
 void display_help() {
-    printf("Usage: <program_name> [options] <input_file>\n");
-    printf("    -i <file> --input <file>    Set matrix input file");
+    printf("Usage: mpirun shortest-path [options]\n");
+    printf("    -i <file> --input <file>    Set matrix input file\n");
     printf("    -o <file> --output <file>   Specify custom output name\n");
     printf("    -h --help                   Display this help message\n");
     printf("    -t --timing-only            Don't print the solution, only the timing\n");
@@ -23,9 +23,11 @@ void display_help() {
 
 
 struct option long_options[] = {
+    {"input", required_argument, 0, 'i'},
     {"output", required_argument, 0, 'o'},
     {"help", no_argument, 0, 'h'},
     {"timing-only", no_argument, 0, 't'},
+    {"random-matrix", required_argument, 0, 'r'},
     {0, 0, 0, 0}
 };
 
@@ -33,11 +35,12 @@ struct option long_options[] = {
 int main(int argc, char** argv) {
   int rank, nprocs, randomMtrx;
   double start, end;
-  char* input;
-  char* output = NULL;
-  FILE* inputFile;
-  randomMtrx = 0;
+  char* inputFile = NULL;
+  char* outputFile = NULL;
+  FILE* input;
+  int printResult = 1;
 
+  randomMtrx = 0;
   MPI_Init(&argc, &argv);
 
   start = MPI_Wtime();
@@ -46,22 +49,26 @@ int main(int argc, char** argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   int opt;
-  while ((opt = getopt_long(argc, argv, "hi:o:tr:", long_options, NULL)) != -1) {
+  while ((opt = getopt_long(argc, argv, "i:o:htr:", long_options, NULL)) != -1) {
     switch (opt) {
       case 'i':
-        input = optarg;
+        inputFile = optarg;
         break;
       case 'o':
-        output = optarg;
+        outputFile = optarg;
         break;
       case 'r':
         randomMtrx = 1;
         mtrxSize = atoi(optarg);
+        break;
       case 'h': 
         if (rank == 0)
           display_help();
         MPI_Finalize();
         return 0;
+      case 't':
+        printResult = 0;
+        break;
       default:
         if (rank == 0)
           display_help();
@@ -72,28 +79,29 @@ int main(int argc, char** argv) {
   GRID_TYPE grid;
   setupGrid(&grid);
 
-  if (input == NULL && randomMtrx == 0) {
-      fprintf(stderr, "Missing input file. Use --help for help.\n");
+  if (inputFile == NULL) {
+    if (randomMtrx == 0) {
+      if (grid.my_rank == 0) 
+        fprintf(stderr, "Missing input file. Use --help for help.\n");
       MPI_Finalize();
       return 1;
-  } else if (input != NULL) {
+    }
+  } else if (inputFile != NULL) {
     if (randomMtrx == 1) {
-      printf(stderr, "Input file chosen, ignoring random matrix option");
+      if (grid.my_rank == 0)
+        fprintf(stderr, "Input file chosen, ignoring random matrix option\n");
       randomMtrx = 0;
     }
 
-    inputFile = fopen(input, "r");
-    if (inputFile == NULL) {
-      if (rank == 0) {
-        fprintf(stderr, "Error: Unable to open file %s\n", input);
-      }
+    input = fopen(inputFile, "r");
+    if (input == NULL) {
+      if (grid.my_rank == 0)
+        fprintf(stderr, "Error: Unable to open file %s\n", inputFile);
       MPI_Finalize();
       return 1;
     }
-    if (grid.my_rank == 0) {
-      fscanf(inputFile, "%d", &mtrxSize);
-    }
-  } 
+    fscanf(input, "%d", &mtrxSize);
+  }
 
   MPI_Bcast(&mtrxSize, 1, MPI_INT, 0, grid.comm);
 
@@ -118,6 +126,10 @@ int main(int argc, char** argv) {
 
   int totalMatrix[mtrxSize * mtrxSize];
 
+  if (randomMtrx) {
+    generateRandomArray(totalMatrix, mtrxSize);
+  }
+
   if (grid.my_rank == 0) {
     int rank_dest;
     int counter[nprocs];
@@ -126,7 +138,8 @@ int main(int argc, char** argv) {
     for (int i = 0; i < mtrxSize; i++) {
       for (int j = 0; j < mtrxSize; j++) {
         rank_dest = (i / submtrxSize) * submtrxOrder + (j / submtrxSize);
-        fscanf(inputFile, "%d", &totalMatrix[rank_dest * submtrxSize * submtrxSize + counter[rank_dest]]);
+        if (!randomMtrx)
+          fscanf(input, "%d", &totalMatrix[rank_dest * submtrxSize * submtrxSize + counter[rank_dest]]);
 
         if (totalMatrix[rank_dest * submtrxSize * submtrxSize + counter[rank_dest]] == 0 && i != j)
           totalMatrix[rank_dest * submtrxSize * submtrxSize + counter[rank_dest]] = NULLPATH;
@@ -161,39 +174,37 @@ int main(int argc, char** argv) {
   if (grid.my_rank == 0) {
     int rank_dest;
     int counter[nprocs];
+    FILE* output;
 
-    FILE* outputFile = fopen(output, "w");
+    if (outputFile != NULL)
+      output = fopen(outputFile, "w");
+    else 
+      output = stdout;
 
     zeroArray(&counter[0], nprocs);
-    for (int i = 0; i < mtrxSize; i++) {
-      for (int j = 0; j < mtrxSize; j++) {
-        rank_dest = (i / submtrxSize) * submtrxOrder + (j / submtrxSize);
-        if (totalMatrix[rank_dest * submtrxSize * submtrxSize + counter[rank_dest]] == NULLPATH) {
-          if (output == NULL) 
-            printf("%d%c", 0, j == mtrxSize - 1 ? '\n' : ' ');
-          else
-            fprintf(outputFile, "%d%c", 0, j == mtrxSize - 1 ? '\n' : ' ');
-        } else {
-          if (output == NULL)
-            printf("%d%c", totalMatrix[rank_dest * submtrxSize * submtrxSize + counter[rank_dest]],
-                   j == mtrxSize - 1 ? '\n' : ' ');
-          else
-            fprintf(outputFile, "%d%c", totalMatrix[rank_dest * submtrxSize * submtrxSize + counter[rank_dest]],
-                   j == mtrxSize - 1 ? '\n' : ' ');
-        }
-        counter[rank_dest] += 1;
-      }
-    }
 
-    if (output != NULL) {
-      fprintf(outputFile, "\n");
-      fclose(outputFile);
-    } else 
-      printf("\n");
-    
+    if (printResult)
+      for (int i = 0; i < mtrxSize; i++) {
+        for (int j = 0; j < mtrxSize; j++) {
+          rank_dest = (i / submtrxSize) * submtrxOrder + (j / submtrxSize);
+          if (totalMatrix[rank_dest * submtrxSize * submtrxSize + counter[rank_dest]] == NULLPATH) {
+            fprintf(output, "%d%c", 0, j == mtrxSize - 1 ? '\n' : ' ');
+          } else {
+            fprintf(output, "%d%c", totalMatrix[rank_dest * submtrxSize * submtrxSize + counter[rank_dest]],
+                   j == mtrxSize - 1 ? '\n' : ' ');
+          }
+          counter[rank_dest] += 1;
+        }
+      }
+
+    if (outputFile != NULL) {
+      fprintf(output, "\n");
+      fclose(output);
+    }
   }
 
-  fclose(inputFile);
+  if (inputFile != NULL)
+    fclose(input);
 
   free(matrixA[0]);
   free(matrixA);
@@ -208,8 +219,10 @@ int main(int argc, char** argv) {
   if (rank == 0) {
     end = MPI_Wtime();
     double elapsed = end - start;
-    printf("Result returned in process %i in %f seconds\n", rank, elapsed);
-    printf("%f\n", elapsed);
+    if (printResult)
+      printf("Result returned in process %i in %f seconds\n", rank, elapsed);
+    else
+      printf("%f,\n", elapsed);
   }
 
   MPI_Finalize();
