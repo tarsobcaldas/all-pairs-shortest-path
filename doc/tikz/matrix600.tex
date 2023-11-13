@@ -1,0 +1,128 @@
+% arara: lualatex
+
+\documentclass[tikz]{standalone}
+
+\usepackage{siunitx}
+\usepackage{pgfplots}
+\usepackage{currency}
+\usepackage{pgfplotstable}
+\usepackage{xstring}
+
+\pgfplotsset{compat=1.18}
+
+% \setlength{\linewidth}{487pt}
+\newcommand\path[1]{\IfFileExists{./#1}{./#1}{./tikz/#1}}
+
+\pgfplotstableset{col sep=semicolon, use comma, fixed, set thousands separator={},
+	every even row/.style={before row={\rowcolor[gray]{0.9}}},
+	every head row/.style={before row=\toprule, after row=\midrule},
+	every last row/.style={after row=\bottomrule}}
+
+\newcommand{\addsumcol}[3]{%
+	% #1=table name
+	% #2=first column name
+	% #3=name of new column
+	% Sums for each column
+	\pgfplotstablecreatecol[%
+		create col/assign/.code={%
+				\def\entry{}%
+				\def\colsum{0}%
+				\pgfmathtruncatemacro\maxcolindex{\pgfplotstablecols-1}%
+				\pgfplotsforeachungrouped \col in {#2,...,\maxcolindex}{%
+						\IfStrEq{\thisrowno{\col}}{}% check if the cell is empty
+						{}% true
+						{\pgfmathsetmacro\colsum{\colsum+\thisrowno{\col}}}% false
+					}%
+				\xdef\entry{\colsum}%
+				\pgfkeyslet{/pgfplots/table/create col/next content}\entry
+			}
+	]{#3}#1%
+}%
+
+\begin{document}
+
+\sisetup{
+	per-mode = symbol,
+	group-separator = {.},
+	output-decimal-marker = {,},
+	range-phrase = { a },
+	range-units = single,
+	detect-mode,
+	retain-zero-uncertainty,
+	drop-zero-decimal=false,
+	round-mode=places,
+	round-precision=2
+}
+
+\pgfplotsset{%
+	compat=1.18,
+	/pgf/number format/.cd,
+	use comma,
+	1000 sep={}
+}
+
+\pgfplotstableread[col sep = comma, header=true]{tikz/mean_results.csv}\loadedtable\newcommand{\threshhold}{3}%
+
+\begin{tikzpicture}
+	\begin{axis}
+		[
+			height = 6cm,
+			width = \linewidth,
+			axis x line=left,
+			axis y line*=left,
+			xtick = data,
+			xticklabels from table = {\loadedtable}{Configuration},
+			xticklabel style = {align = center, font = \scriptsize},
+			ytick pos=left,
+			% ylabel = {Número de registros (\unit{\percent})},
+			ytick = {1,3,...,20},
+			% yticklabel= {\pgfmathprintnumber{\tick}\%{\null}},
+			% legend style = {at={(0.5,-0.1)}, legend columns=-1, anchor = north},
+			enlarge x limits = 0.075,
+			enlarge y limits = 0.1,
+			scatter, only marks,
+			nodes near coords style={font = \bfseries\scriptsize},
+			% bar width = 20pt, 
+			nodes near coords={\pgfmathprintnumber[precision=3]{\labela}},
+			nodes near coords greater equal only/.style={
+					% define the style of the nodes with "small" values
+					small value/.style={
+							/tikz/coordinate,
+						},
+					every node near coord/.append style={
+							check for small values/.code={
+									\begingroup
+									% this group is merely to switch to FPU locally.
+									% Might be unnecessary, but who knows.
+									\pgfkeys{/pgf/fpu}
+									\pgfmathparse{\pgfplotspointmeta<#1}
+									\global\let\result=\pgfmathresult
+									\endgroup
+									%
+									% simplifies debugging:
+									%\show\result
+									%
+									\pgfmathfloatcreate{1}{1.0}{0}
+									\let\ONE=\pgfmathresult
+									\ifx\result\ONE
+										% AH: our condition 'y < #1' is met.
+										\pgfkeysalso{/pgfplots/small value}
+									\fi
+								},
+							check for small values,
+						},
+				},
+		]
+
+		\addplot[blue,
+			visualization depends on ={\thisrow{{totalMean600}} \as \labela}
+		] table [meta=Configuration, y expr=\thisrow{totalMean600}, x expr=\coordindex] \loadedtable;
+
+    \addplot[red, every node near coord/.append style = {yshift = -.5cm},
+		visualization depends on ={\thisrow{runsMean600} \as \labela}
+		] table [meta=Configuration, y expr=\thisrow{runsMean600}, x expr=\coordindex] \loadedtable;
+
+	\end{axis}
+\end{tikzpicture}
+
+\end{document}
