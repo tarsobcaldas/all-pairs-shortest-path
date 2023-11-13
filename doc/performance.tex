@@ -1,0 +1,80 @@
+\section{Análise de performance}
+
+Para analisar a o desempenho deste programa, o rodamos com diferentes configurações de matrizes,
+de processos e número de máquinas em comunicação. Cada configuração foi corrida 50 vezes
+através de um script, e foram registrados o tempo de cada corrida através de
+\cinline{MPI_Wait()}  e também registrado o tempo total de rodar as 50 vezes.%chktex 36
+No primeiro caso, não é incluída o tempo de comunicação entre as máquinas, portanto
+é possível registrar o tempo de execução do processo em si, como também a diferença
+de tempo de comunicação. Nos gráficos da \cref{fig:timing-graphs} temos o resultado de tempo.
+
+\begin{figure}[htp]
+  \centering
+	\begin{minipage}{.49\linewidth}
+    \begin{SubFloat}{Tempos de matrizes de ordem 6.\label{fig:timings6}}
+			\includestandalone{./tikz/matrix6}
+		\end{SubFloat}
+	\end{minipage}
+	\begin{minipage}{.49\linewidth}
+    \begin{SubFloat}{Tempos de matrizes de ordem 300.\label{fig:timings300}}
+			\includestandalone{./tikz/matrix300}
+		\end{SubFloat}
+	\end{minipage}
+
+	\begin{minipage}{.7\linewidth}
+    \begin{SubFloat}{Tempos de matrizes de ordem 600.\label{fig:timings600}}
+			\includestandalone{./tikz/matrix600}
+		\end{SubFloat}
+	\end{minipage}
+
+	\begin{minipage}{.7\linewidth}
+    \begin{SubFloat}{Tempos de matrizes de ordem 900.\label{fig:timings900}}
+			\includestandalone{./tikz/matrix900}
+		\end{SubFloat}
+	\end{minipage}
+  \caption{\small
+    Gráficos com os tempos das matrizes. Os pontos vermelhos representam as médias tempo de resolução 
+    do problema já com a comunicação iniciada, e os pontos azuis as médias de tempo execução da chamada
+    de \file{mpirun} 50 vezes. No eixo \(x\) temos as configurações das máquinas no formado \(c_i=(m;p)\),
+    onde \(m\) representa o número de máquinas usadas e \(p\) o de processos. As configurações
+    com \enquote{\(*\)} indicam que a distribuição dos processos entre as máquinas não é balanceada.
+  }\label{fig:timing-graphs}
+\end{figure}
+
+A partir dos gráficos, é possível analisar que para matrizes pequenas como na \cref{fig:timings6},
+a paralelização não faz tanto sentido, já que a diferença de tempo é negativa, quanto mais processos 
+e máquinas utilizamos para resolver o problema, visto que o tempo de comunicação do \ac{mpi} é o 
+gargalo da aplicação.
+
+A diferença passa a ser perceptível (mas ainda tímida) quando olhamos os casos das matrizes de 300 nós, 
+onde o uso de 4 processos em uma máquina é quase \(\frac{1}{4}\) do de um processo, mas é possível
+observar que distribuir estes processos entre um número maior de máquinas cria um \emph{overhead}
+significativo, o que nos leva a crer que é preferível rodar os processos em um número menor
+de máquinas possível. No gráfico da \cref{fig:timings300}, o melhor resultado é quando usamos
+16 processos, mas apenas quando são executados em duas máquinas, e ainda assim, o tempo total
+de execução foi maior neste caso do que quando se usam 9 processos. Os casos de 9 processos
+são notáveis, pois contradiz a observação feita anteriormente, pois o melhor resultado é dividindo
+em 3 máquinas em vez de duas, onde ambas configurações \(c_i=[p_1,\ldots,p_m]\), do número de processos da máquina
+\(i\) foram \(c_7=[4,5]\) (uma máquina com 4 processos e outra com 5) e \(c_7=[8,1]\), respectivamente, 
+e a diferença é pouco notável entre os três casos, apesar de \(c_5\) possuir uma vantagem sobre 
+\(c_5=(3;9)\) no tempo de execução do processo, o tempo total de execução de \(c_5\) foi ligeiramente
+melhor.
+
+É muito mais considerável a diferença entre um e mais processos  chegamos a matrizes de ordem
+600, onde 1 processo demora seis vezes mais do que 4 em uma máquina. Também vemos na 
+\cref{fig:timings600} que \(c_8=(2;16)\) continua a ser dar o melhor 
+resultado na resolução, e isto também se repente nas matrizes de ordem 900. É mais 
+considerável no caso de 600 nós do que no de 300 a discrepância na duração do
+programa quando introduzimos mais máquinas e mantemos o número de processos, com 
+uma importante exceção que é quando temos \(c_{12} = (6;36)\), que consegue
+ter vantagem sobre a configuração com estes processos distribuídos em apenas 5,
+que é o caso de \(c_{13} = [8,8,8,8,4]\). Isto talvez ocorra pois \(c_{12}\) 
+se enquadra melhor na definição do comunicador em \emph{grid}.
+
+O gráfico da \cref{fig:timings900} possui a mesma tendência do anterior,
+sua principal variação é que em matrizes maiores, aumentar o número de processos
+após 16 não cria um \emph{overhead} tão considerável, possivelmente pois
+o tempo de processamento em si começa a alcançar o \emph{bottleneck} 
+dos comunicadores. É possível que se passarmos a lidar com matrizes ainda 
+maiores, configuração com um número de processadores maiores consigam 
+term um melhor desempenho do que a configuração \(c_8\).

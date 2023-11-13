@@ -1,0 +1,68 @@
+\section{Paralelizando a multiplicação através do algoritmo de Fox}
+
+O \emph{algoritmo de Fox} nos permite dividir a tarefa de multiplicação
+da matriz em diversos processos fazendo multiplicações de matrizes menores
+em cada um. Para isso, dividimos a matriz em um \emph{grid}, isto é,
+uma malha com divisões iguais ao número de processos. Por exemplo,
+na matriz \(M\), poderiamos ter
+
+\[
+	M_0 =
+	\begin{bmatrix}
+		0 & 2 & 9 \\
+		0 & 0 & 0 \\
+		9 & 2 & 0
+	\end{bmatrix},\quad
+	M_1 =
+	\begin{bmatrix}
+		5  & 6 & 14 \\
+		0  & 0 & 0  \\
+		14 & 6 & 5
+	\end{bmatrix},\quad
+	M_2 =
+	\begin{bmatrix}
+		4 & 6 & 4 \\
+		3 & 5 & 3 \\
+		4 & 6 & 4
+	\end{bmatrix},
+	M_3 =
+	\begin{bmatrix}
+		0 & 1 & 9 \\
+		8 & 0 & 8 \\
+		9 & 1 & 0
+	\end{bmatrix}.
+\]
+
+Com \ac{mpi}, podemos definir o grid como um \emph{struct}
+\cinline/GRID_TYPE/, como mostra o \cref{lst:grid-type}. O grid que criamos deve possuir
+dimensão \(q\timesq\), onde \(q=\sqrt{p}\) e \(p\) é o número de processos. Dizemos
+que \(q\) é a \emph{ordem} do \emph{grid}.
+
+\begin{listing}
+	\cfile[firstline = 6, lastline = 15]{../mtrxop.h}
+	\caption{Definição do tipo \cinline/GRID_TYPE/ no arquivo \file{mtrxop.h}}%
+	\label{lst:grid-type}
+\end{listing}
+
+Aqui definimos três comunicadores, um para o grid, um para linhas e outro para colunas,
+além de definirmos o número de processos, a ordem  do grid, além de ter a informação
+da linha e coluna no grid. Usamos então para inicar o \emph{grid} a função \cinline{setupGrid(GRID_TYPE)}, %chktex 36
+definida no \cref{lst:setup-grid}.
+
+\begin{listing}
+	\cfile[firstline=85,lastline=105]{../mtrxop.c}
+	\caption{Inicialização do \emph{grid} definida em \file{mtrxop.c}.}%
+	\label{lst:setup-grid}
+\end{listing}
+
+Por fim, definimos no \cref{lst:fox} função que aplica o algoritmo de Fox para
+efetuar a multiplicação de matrizes. Este algoritmo escolhe uma submatriz \(A\) de
+cada linha e a envia para os outros processos daquela linha, e então cada processo
+multiplica a matriz recebida com uma matriz \(B\) presente previamente (inicialmente 
+igual a \(A\)). Cada processo então envia a matriz \(B\) para o processo acima no \emph{grid}.
+
+\begin{listing}
+	\cfile[firstline=108,lastline=127]{../mtrxop.c}
+	\caption{Algoritmo de Fox.}%
+	\label{lst:fox}
+\end{listing}
