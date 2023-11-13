@@ -17,7 +17,7 @@ typedef struct {
 
 void matrixMultiply(int** matrixA, int** matrixB, int** matrixC, int size);
 
-void Fox(GRID_TYPE* grid, int** matrixA, int** matrixB, int** matrixC, int size);
+void Fox(GRID_TYPE* grid, int** matrixA, int** matrixB, int** matrixC, int** tempMatrix, int size);
 
 void setupGrid(GRID_TYPE *grid);
 

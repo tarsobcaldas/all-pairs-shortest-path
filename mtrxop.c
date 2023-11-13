@@ -105,7 +105,8 @@ void setupGrid(GRID_TYPE* grid) {
 }
 
 
-void Fox(GRID_TYPE* grid, int** matrixA, int** matrixB, int** matrixC, int size) {
+void Fox(GRID_TYPE* grid, int** matrixA, int** matrixB, int** matrixC,
+         int** tempMatrix, int size) {
   int bcast_root, source, dest;
   int tag = 0;
 
@@ -119,7 +120,11 @@ void Fox(GRID_TYPE* grid, int** matrixA, int** matrixB, int** matrixC, int size)
     if (bcast_root == grid->col) {
       MPI_Bcast(matrixA[0], size * size, MPI_INT, bcast_root, grid->row_comm);
       matrixMultiply(matrixA, matrixB, matrixC, size);
-    } 
+    } else {
+      MPI_Bcast(tempMatrix[0], size * size, MPI_INT, bcast_root,
+                grid->row_comm); // &tempA[0][0] redundante
+      matrixMultiply(tempMatrix, matrixB, matrixC, size);
+    }
     MPI_Sendrecv_replace(matrixB[0], size * size, MPI_INT, dest, tag, source,
                          tag, grid->col_comm, MPI_STATUS_IGNORE);
   }

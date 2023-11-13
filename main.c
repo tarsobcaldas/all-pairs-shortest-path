@@ -12,7 +12,7 @@
 int mtrxSize, submtrxOrder, submtrxSize;
 
 void display_help() {
-    printf("Usage: mpirun <processes> shortest-path [options]\n");
+    printf("Usage: mpirun shortest-path [options]\n");
     printf("    -i <file> --input <file>    Set matrix input file\n");
     printf("    -o <file> --output <file>   Specify custom output name\n");
     printf("    -h --help                   Display this help message\n");
@@ -155,10 +155,11 @@ int main(int argc, char** argv) {
   int g = 1;
   int** matrixB = initMatrix(submtrxSize);
   int** matrixC = initMatrix(submtrxSize);
+  int** tempMatrix = initMatrix(submtrxSize);
   copyMatrix(matrixA, matrixB, submtrxSize);
   copyMatrix(matrixA, matrixC, submtrxSize);
   while (g < mtrxSize) {
-    Fox(&grid, &matrixA[0], &matrixB[0], &matrixC[0], submtrxSize); 
+    Fox(&grid, &matrixA[0], &matrixB[0], &matrixC[0], tempMatrix, submtrxSize); 
     copyMatrix(&matrixC[0], &matrixA[0], submtrxSize);
     copyMatrix(&matrixC[0], &matrixB[0], submtrxSize);
     g *= 2;
@@ -211,6 +212,9 @@ int main(int argc, char** argv) {
   free(matrixB);
   free(matrixC[0]);
   free(matrixC);
+  free(tempMatrix[0]);
+  free(tempMatrix);
+
 
   if (rank == 0) {
     end = MPI_Wtime();
