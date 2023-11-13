@@ -87,14 +87,14 @@ void setupGrid(GRID_TYPE* grid) {
 
   MPI_Comm_size(MPI_COMM_WORLD, &(grid->nprocs));
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  grid->submtrxOrder = (int)sqrt(grid->nprocs);
-  dimensions[0] = dimensions[1] = grid->submtrxOrder;
+  grid->gridOrder = (int)sqrt(grid->nprocs);
+  dimensions[0] = dimensions[1] = grid->gridOrder;
   periods[0] = periods[1] = 1;
   MPI_Cart_create(MPI_COMM_WORLD, 2, dimensions, periods, 1, &(grid->comm));
-  MPI_Comm_rank(grid->comm, &(grid->my_rank));
-  MPI_Cart_coords(grid->comm, grid->my_rank, 2, coordinates);
-  grid->my_row = coordinates[0];
-  grid->my_col = coordinates[1];
+  MPI_Comm_rank(grid->comm, &(grid->rank));
+  MPI_Cart_coords(grid->comm, grid->rank, 2, coordinates);
+  grid->row = coordinates[0];
+  grid->col = coordinates[1];
 
   varying_coords[0] = 0;
   varying_coords[1] = 1;
@@ -105,28 +105,22 @@ void setupGrid(GRID_TYPE* grid) {
 }
 
 
-void Fox(GRID_TYPE* grid, int** matrixA, int** matrixB, int** matrixC,
-         int** tempMatrix, int size) {
+void Fox(GRID_TYPE* grid, int** matrixA, int** matrixB, int** matrixC, int size) {
   int bcast_root, source, dest;
   int tag = 0;
 
-  source = (grid->my_row + 1) % grid->submtrxOrder;
-  dest = (grid->my_row + grid->submtrxOrder - 1) %
-         grid->submtrxOrder; 
+  source = (grid->row + 1) % grid->gridOrder;
+  dest = (grid->row + grid->gridOrder - 1) %
+         grid->gridOrder; 
 
   int step;
-  for (step = 0; step < grid->submtrxOrder; step++) {
-    bcast_root = (grid->my_row + step) % grid->submtrxOrder;
-    if (bcast_root == grid->my_col) {
+  for (step = 0; step < grid->gridOrder; step++) {
+    bcast_root = (grid->row + step) % grid->gridOrder;
+    if (bcast_root == grid->col) {
       MPI_Bcast(matrixA[0], size * size, MPI_INT, bcast_root, grid->row_comm);
       matrixMultiply(matrixA, matrixB, matrixC, size);
-    } else {
-      MPI_Bcast(tempMatrix[0], size * size, MPI_INT, bcast_root,
-                grid->row_comm); // &tempA[0][0] redundante
-      matrixMultiply(tempMatrix, matrixB, matrixC, size);
-    }
+    } 
     MPI_Sendrecv_replace(matrixB[0], size * size, MPI_INT, dest, tag, source,
                          tag, grid->col_comm, MPI_STATUS_IGNORE);
   }
 }
-
