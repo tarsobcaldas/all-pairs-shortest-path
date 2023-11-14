@@ -1,0 +1,42 @@
+\pagebreak
+
+\section{Execução do programa}
+
+Para executar o programa, basta compilar o projeto usando \verb|make|, e então
+executar como seguem as instruções no \cref{lst:help}
+
+\begin{listing}
+  \small
+	\begin{verbatim}
+  Usage: mpirun -np <processes> shortest-path [options]
+      -i <file> --input <file>    Set matrix input file
+      -o <file> --output <file>   Specify custom output name
+      -h --help                   Display this help message
+      -t --timing-only            Don't print the solution, only the timing
+      -r --random-matrix <size>   Use random matrix as input
+                                  (only if no input file provided)
+  \end{verbatim}
+	\caption{Funcionalidade do programa \file{shortest-path}.}%
+	\label{lst:help}
+\end{listing}
+
+É necessário que o número de processos seja um quadrado perfeito, a fim de
+que estes possam ser organizados em um \emph{grid}.
+
+Podemos rodar o programa tanto utilizando um arquivo com uma matriz em
+que a primeira linha contém o número de nós do grafo, ou então gerar uma matriz
+aleatória de tamanho arbitrário. Em ambos os casos, as matrizes planificadas
+em um \emph{array} \cinline{totalMatrix[]} de tamanho \(n\times n\), que é então populado nas matrizes
+\(A\) de cada processo através de \cinline{MPI_Scatter()}. %chktex 36
+Compiamos então a matriz \(A\) para \(b\) e \(C\), e podemos
+aplicar o algoritmo de Fox até que tenhamos a matriz de distância, 
+como ilustra o \cref{lst:fox-loop}.
+
+\begin{listing}
+  \cfile[firstline=155, lastline = 165]{../main.c}
+  \caption{Loop do algoritmo Fox sobre as matrizes \(A\) e \(B\) de cada processo.}%
+  \label{lst:fox-loop}
+\end{listing}
+
+Terminamos usamos \cinline{MPI_Gather()} para copiar as matrizes de volta %chktex 36
+para o array \cinline{totalMatrix[]} e temos o nosso resultado.

@@ -9,7 +9,7 @@
 
 #define NULLPATH -1
 
-int mtrxSize, submtrxOrder, submtrxSize;
+int mtrxSize, gridOrder, submtrxSize;
 
 void display_help() {
     printf("Usage: mpirun shortest-path [options]\n");
@@ -104,10 +104,10 @@ int main(int argc, char** argv) {
     fscanf(input, "%d", &mtrxSize);
   }
 
-  submtrxOrder = (int)sqrt(nprocs);
-  submtrxSize = mtrxSize / submtrxOrder;
+  gridOrder = (int)sqrt(nprocs);
+  submtrxSize = mtrxSize / gridOrder;
 
-  if (nprocs != submtrxOrder * submtrxOrder) {
+  if (nprocs != gridOrder * gridOrder) {
     if (rank == 0) {
       fprintf(stderr,"Error: The number of processes P is not a perfect square.\n");
     }
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
     // scan matrix
     for (int i = 0; i < mtrxSize; i++) {
       for (int j = 0; j < mtrxSize; j++) {
-        rank_dest = (i / submtrxSize) * submtrxOrder + (j / submtrxSize);
+        rank_dest = (i / submtrxSize) * gridOrder + (j / submtrxSize);
         if (!randomMtrx)
           fscanf(input, "%d", &totalMatrix[rank_dest * submtrxSize * submtrxSize + counter[rank_dest]]);
 
@@ -185,7 +185,7 @@ int main(int argc, char** argv) {
     if (printResult)
       for (int i = 0; i < mtrxSize; i++) {
         for (int j = 0; j < mtrxSize; j++) {
-          rankDest = (i / submtrxSize) * submtrxOrder + (j / submtrxSize);
+          rankDest = (i / submtrxSize) * gridOrder + (j / submtrxSize);
           if (totalMatrix[rankDest * submtrxSize * submtrxSize + counter[rankDest]] == NULLPATH) {
             fprintf(output, "%d%c", 0, j == mtrxSize - 1 ? '\n' : ' ');
           } else {

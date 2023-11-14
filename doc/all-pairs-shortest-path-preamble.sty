@@ -1,0 +1,174 @@
+\RequirePackage{amsmath}
+\RequirePackage{multicol}
+\RequirePackage{graphicx}
+\RequirePackage{xcolor}
+\colorlet{linkscolor}{blue}
+
+\RequirePackage{tikz}
+\RequirePackage{standalone}
+
+\RequirePackage{lua-widow-control}
+\RequirePackage{impnattypo}
+
+\RequirePackage{pgfplots}
+\RequirePackage{pgfplotstable}
+
+\RequirePackage{acro}
+\input{acronimos.tex}
+
+\RequirePackage[brazil]{babel}
+\RequirePackage{float}
+\RequirePackage{subfig}
+\RequirePackage{caption}
+\RequirePackage[
+	style=apa,
+	backend = biber,
+]{biblatex}
+
+\RequirePackage{fontspec}
+\setmainfont{MinionPro}
+\setmonofont{DelugiaComplete}
+
+\RequirePackage{microtype}
+
+\RequirePackage{unicode-math}
+\setmathfont{StixTwoMath}
+
+\addbibresource{all-pairs-shortest-path.bib}
+
+\RequirePackage{csquotes}
+\usepackage[%
+	left=2cm,
+	right=2cm,
+	top=2cm,
+	bottom=2cm
+]{geometry}
+
+\RequirePackage{minted}
+
+% \newmint{c}{}
+% \newminted{c}{fontsize = \small}
+% \newmintedfile{c}{linenos, fontsize = \footnotesize}
+% \newmintinline[hs]{haskell}{fontsize = \small}
+
+\newmint[cmint]{c}{}
+\newminted[ccode]{c}{}
+\newmintedfile{c}{linenos, fontsize = \footnotesize}
+\newmintinline[cinline]{c}{fontsize = \small}
+
+
+\RequirePackage{siunitx}
+\sisetup{
+	per-mode = symbol,
+	group-separator = {.},
+	output-decimal-marker = {,},
+	range-phrase = { a },
+	range-units = single,
+	detect-mode,
+	retain-zero-uncertainty,
+	drop-zero-decimal=false
+}
+
+\RequirePackage{hyperref}
+\hypersetup{
+	colorlinks = true,
+	colorlinks = true,
+	linkcolor = linkscolor,
+	filecolor = linkscolor,
+	urlcolor = linkscolor,
+	citecolor = linkscolor,
+	pdftitle={\@title},
+	pdfauthor={\@author},
+}
+
+\RequirePackage[
+	capitalise,
+	noabbrev,
+	nameinlink,
+	brazilian
+]{cleveref}
+
+
+\newcommand{\subject}[2]{\def\subject@name{#1}\def\subject@code{#2}}
+\newcommand{\location}{\def\@location}
+\newcommand{\subtitle}{\def\@subtitle}
+\newcommand{\groupnumber}{\def\group@number}
+
+\graphicspath{{figures}}
+
+\renewcommand{\maketitle}{
+	\begin{titlepage}
+		\centering
+		\vspace*{0.5 cm}
+		\includegraphics[width = .4\linewidth]{FCUP-logo}\\[2 cm]	% University Logo
+		\rule{\linewidth}{0.2 mm} \par\vspace{\baselineskip}
+		{\huge \bfseries \@title} \\[\baselineskip]
+		{\Large \@subtitle}
+    \rule{\linewidth}{0.2 mm}\\[.2cm]
+		\textsc{\LARGE \newline\newline \subject@name}\\[0.2 cm]
+		\textsc{\Large \subject@code}
+
+		\vfill
+		{
+			\centering
+			{\Large\emph{\ifdefined\group@number\group@number\fi}} \par\null\par
+			{
+      \renewcommand{\and}{\\[.5em]}
+				\Large
+					\@author
+			}
+		}
+		\vfill
+
+		{\Large \@location~---~\the\year}
+	\end{titlepage}
+
+  \tableofcontents\thispagestyle{empty}
+  \clearpage
+  \setcounter{page}{1}
+}
+
+\renewcommand{\paragraph}[1]{\par\noindent\textbf{#1}}
+
+\setcounter{tocdepth}{3}
+\setlength\parskip{0pt}
+
+% \newcommand{\Fun}{\textsc{Fun}}
+% \newcommand{\Haskell}{\emph{Haskell}}
+% \newcommand{\Term}[1]{\hs{#1}}
+% \newcommand{\Type}[1]{\hs{#1}}
+% \newcommand{\Function}[1]{\hs{#1}}
+\newcommand{\file}[1]{\texttt{\small #1}}
+
+\newcommand{\listingname}{Código}
+\renewcommand{\listingscaption}{\listingname}
+\newcounter{sublisting}[listing]
+\newcounter{sublisting@save}[listing]
+\crefname{listing}{Código}{Códigos}
+\crefname{sublisting}{Código}{Códigos}
+
+\renewcommand{\thesublisting}{\alph{sublisting}}
+
+% \newcommand{\GHCi}{GHCi}
+% \newcommand{\stack}{\emph{stack}}
+
+\renewcommand{\fps@listing}{htp}
+
+\newbox\sf@box
+\newenvironment{SubFloat}[2][]%
+{%
+  \def\sf@one{#1}%
+	\def\sf@two{#2}%
+	\setbox\sf@box\hbox%
+	\bgroup%
+}{%
+  \egroup%
+	\ifx\@empty\sf@two\@empty\relax
+		\def\sf@two{\@empty}
+	\fi
+	\ifx\@empty\sf@one\@empty\relax
+		\subfloat[\sf@two]{\box\sf@box}%
+	\else
+		\subfloat[\sf@one][\sf@two]{\box\sf@box}%
+	\fi
+}

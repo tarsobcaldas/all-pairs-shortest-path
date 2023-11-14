@@ -1,0 +1,23 @@
+\section{Solucionando o problema}
+
+Para encontrar a matriz \(N\) dos menores caminhos a partir de \(M\), 
+elevar \(M\) ao quadrado sucessivamente até que \(N = M^{2^{\log(n-1)}}\),
+onde \(n\) é o número de nós do grafo. Para isso, implementamos o seguinte
+algoritmo de multiplicação de matrizes apresentado no
+\cref{lst:matrix-multiply}.
+
+\begin{listing}
+\cfile[firstline=54, lastline=69]{../mtrxop.c}
+\caption{Algoritmo de multiplicação de matrizes no arquivo \file{mtrxop.c}.}
+\label{lst:matrix-multiply}
+\end{listing}
+
+O que difere este algoritmo de uma multiplicação é 
+que em vez de multiplicar as entradas \(A_{i,k}\) e
+\(B_{k,j}\), com \(k=1,\ldots,n\), e somar os respectivos
+\(k\) resultados, somamos \(A_{i,k}\) com \(B_{i,k}\) e
+escolhemos os menor resultado (ignorando as entradas com 
+valor 0). Com isso encontramos o \emph{produto da distância}
+entre duas matrizes, e repetindo este processo sucessivamente,
+até \(M^{n-1}\), encontramos a matriz de distância, e portanto,
+resolvemos o problema.

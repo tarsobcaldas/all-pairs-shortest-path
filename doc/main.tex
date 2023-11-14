@@ -1,0 +1,29 @@
+% arara: lualatex: {shell: yes}
+
+\documentclass[10pt]{article}
+
+\usepackage{all-pairs-shortest-path-preamble}
+
+\title{Resolvendo o problema do menor caminho}
+\subtitle{Paralelização através MPI com o algoritmo de \emph{Fox}}
+\author{Tarso Boudet Caldas \and up202204297}
+\date{\today}
+
+\subject{Computação Paralela}{CC4014}
+\location{Porto}
+
+\begin{document}
+
+\maketitle
+
+\input{introducao.tex}
+\input{solucao-problema.tex}
+\input{algoritmo-fox.tex}
+\input{execucao.tex}
+\input{performance.tex}
+\input{conclusao.tex}
+
+% \nocite{*}
+\printbibliography
+
+\end{document}
