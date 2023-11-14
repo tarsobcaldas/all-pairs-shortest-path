@@ -100,10 +100,9 @@ int main(int argc, char** argv) {
       MPI_Finalize();
       return 1;
     }
+
     fscanf(input, "%d", &mtrxSize);
   }
-
-  MPI_Bcast(&mtrxSize, 1, MPI_INT, 0, grid.comm);
 
   submtrxOrder = (int)sqrt(nprocs);
   submtrxSize = mtrxSize / submtrxOrder;
@@ -126,11 +125,11 @@ int main(int argc, char** argv) {
 
   int totalMatrix[mtrxSize * mtrxSize];
 
-  if (randomMtrx) {
-    generateRandomArray(totalMatrix, mtrxSize);
-  }
-
   if (grid.rank == 0) {
+    if (randomMtrx) {
+      generateRandomArray(totalMatrix, mtrxSize);
+    }
+
     int rank_dest;
     int counter[nprocs];
     zeroArray(&counter[0], nprocs);
